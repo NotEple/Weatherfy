@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { apiKey } from "../api/apiKey";
-import { current_api, forecast_api } from "../api/api";
-import Cloud from "../images/clouds.png";
-import Sun from "../images/sun.png";
-import Rain from "../images/rain2.gif";
-import Snow from "../images/snow.gif";
+import { API_KEY } from "../api/apiKey";
+import { CURRENT_API } from "../api/api";
+import Cloud from "../assets/images/clouds.png";
+import Sun from "../assets/images/sun.png";
+import Rain from "../assets/images/rain2.gif";
+import Snow from "../assets/images/snow.gif";
+import { getTime } from "../utils/getTime";
+import { formatDate } from "../utils/formatDate";
 
 export default function WeatherNow() {
   const [weatherData, setWeatherData] = useState<any>(null);
@@ -24,23 +26,18 @@ export default function WeatherNow() {
   const getWeather = async () => {
     try {
       setLoading(true);
+      setError(null);
       const req = await fetch(
-        current_api + apiKey + `&q=${searchParam}&aqi=no`
+        CURRENT_API + `?key=${API_KEY}` + `&q=${searchParam}&aqi=no`
       );
       const res = await req.json();
       console.log(res);
 
-      // if (res.error.message === "Parameter q is missing.") {
-      //   throw Error("You need to add a place...");
-      // }
-
-      // if (res.error.message === "No matching location found.") {
-      //   throw Error("We did not find that location...");
-      // }
-
       setLocationData(res.location);
       setWeatherData(res.current);
 
+      formatDate(locationData);
+      console.log(getTime());
       if (
         req.status === 400 &&
         res.error.message === "Parameter q is missing."
@@ -126,8 +123,6 @@ export default function WeatherNow() {
         setClear(false);
         setOvercast(false);
       }
-
-      setError(null);
     } catch (err: any) {
       console.error(err);
       setError(err.message);
@@ -135,19 +130,6 @@ export default function WeatherNow() {
       setLoading(false);
     }
   };
-
-  function clear() {
-    setWeatherData(null);
-    setLocationData(null);
-    setClouds(false);
-    setSunny(false);
-    setClear(false);
-    setRain(false);
-    setOvercast(false);
-    setSnow(false);
-    setLocationData(null);
-    setWeatherData(null);
-  }
 
   return (
     <>

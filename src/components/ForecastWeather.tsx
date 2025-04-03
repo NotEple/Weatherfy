@@ -1,130 +1,108 @@
-import { useState } from "react";
-import { forecast_api } from "../api/api";
-import Cloud from "../images/clouds.png";
-import Sun from "../images/sun.png";
-import Rain from "../images/rain2.gif";
-import Snow from "../images/snow.gif";
-import { API_KEY } from "../api/apiKey";
+import { useState, FormEvent, ChangeEvent } from "react";
+import { useForecast } from "../hooks/useForecast";
+import { twMerge } from "tailwind-merge";
+import { Card } from "./Card";
+import { AnimatePresence, motion } from "framer-motion";
+import { AnimateEntry } from "./AnimateEntry";
 
 export default function ForecastWeather() {
-  const [weatherData, setWeatherData] = useState<any>(null);
-  const [locationData, setLocationData] = useState<any>(null);
-  const [forecastData, setForecastData] = useState<any>([]);
-  const [searchParam, setSearchParam] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<any>(null);
+  const [search, setSearch] = useState<string>("");
+  const { forecast, loading, error, request } = useForecast();
 
-  const getWeather = async () => {
-    try {
-      setLoading(true);
-      setForecastData([]);
-      setWeatherData(null);
-      setLocationData(null);
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
 
-      const req = await fetch(
-        forecast_api + `?key=${API_KEY}` + `&q=${searchParam}&aqi=no`
-      );
-      const res = await req.json();
-
-      if (
-        req.status === 400 &&
-        res.error.message === "Parameter q is missing."
-      ) {
-        throw Error("You need to add a location...");
-      }
-
-      if (
-        req.status === 400 &&
-        res.error.message === "No matching location found."
-      ) {
-        throw Error("We did not find that location...");
-      }
-
-      setLocationData(res.location);
-      setWeatherData(res.current);
-      setForecastData(res.forecast.forecastday[0].hour);
-
-      setError(null);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+    request(search);
   };
 
-  const ForecastDate = forecastData.filter((time: Weather) => {
-    if (time.time) {
-      const forecastTime = time.time;
-      const localTime = locationData.localtime;
-      return forecastTime >= localTime;
-    }
-    return true;
-  });
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setSearch(e.target.value);
+  };
 
-  function wind_degree(degree: number) {
-    if (degree > 337.5) return "Northe";
-    if (degree > 292.5) return "North West";
-    if (degree > 247.5) return "West";
-    if (degree > 202.5) return "South West";
-    if (degree > 157.5) return "South";
-    if (degree > 122.5) return "South Easte";
-    if (degree > 67.5) return "East";
-    if (degree > 22.5) {
-      return "North East";
+  const forecastDate = forecast?.forecast.forecastday[0].hour.filter(
+    (day: any) => {
+      if (day.time) {
+        const forecastTime = day.time;
+        const localTime = forecast.location.localtime;
+        return forecastTime >= localTime;
+      }
+      return;
     }
-    return true;
-  }
+  );
 
   return (
     <>
-      <section className="container">
-        <div className="header_container">
-          <h1 className="header">Weatherfy</h1>
-          <h2 className="sub_header">Get the weather on the fly</h2>
-        </div>
+      <section className="flex flex-col items-center gap-4 w-full">
         <form
-          className="search_form"
-          onSubmit={(e) => {
-            e.preventDefault();
-          }}
+          className="bg-gray-200 gap-4 rounded-md flex flex-col p-4 w-full max-w-md"
+          onSubmit={handleSubmit}
         >
-          {error && <span className="error">{error}</span>}
-          <span className="search_header">Search for a location</span>
+          <div className="flex flex-col items-center gap-4">
+            <h1 className="text-5xl text-dark-blue font-semibold">Weatherfy</h1>
+            <h2 className="text-3xl text-dark-blue">
+              Get the weather on the fly
+            </h2>
+          </div>
+          {error.status && (
+            <span className="bg-red-600 text-gray-200 p-2 rounded-md font-semibold">
+              {error.message}
+            </span>
+          )}
           <input
-            className="search_box"
+            className="rounded-md placeholder:text-dark-blue h-12 placeholder:font-semibold border-dark-blue caret-dark-blue text-dark-blue bg-gray-200 border-2 focus:outline-2 focus:outline-dark-blue pl-1 text-2xl"
             aria-label="Search for a location"
-            onChange={(e) => {
-              setSearchParam(e.target.value);
-              setError(null);
-            }}
+            placeholder="Search for a location"
+            type="search"
+            onChange={handleChange}
           />
-          <button className="search_submit" onClick={getWeather}>
-            Search
+          <button
+            className={twMerge(
+              "bg-dark-blue w-full h-12 rounded-md text-gray-200 text-2xl hover:cursor-pointer border-2 border-gray-200 hover:outline-2 hover:outline-dark-blue"
+            )}
+            onClick={handleSubmit}
+          >
+            {loading ? (
+              <div className="flex flex-row gap-1 justify-center w-full">
+                <div className="bg-gray-200 rounded-full w-4 h-4 animate-pulse-delay-200"></div>
+                <div className="bg-gray-200 rounded-full w-4 h-4 animate-pulse-delay-400"></div>
+                <div className="bg-gray-200 rounded-full w-4 h-4 animate-pulse-delay-600"></div>
+              </div>
+            ) : (
+              "Search"
+            )}
           </button>
         </form>
       </section>
-      {forecastData && locationData && weatherData ? (
-        <section className="weather_container">
-          <h3 className="weather_header">
-            Weather for {locationData.name}, {locationData.country}
-          </h3>
-          {ForecastDate.map((forecast: any, index: number) => (
-            <div key={index} className="weather_div">
-              <p className="weather_time">{forecast.time.slice(10)}</p>
-              <hr />
-              <p className="weather_condition">{forecast.condition.text}</p>
-              <hr />
-              <div className="test">
-                <img src={forecast.condition.icon} alt="weather icon" />
-                {/* <p>{wind_degree(forecast.wind_degree)}</p>
-                <p>{forecast.wind_kph} KM/h</p> */}
-                <p className="weather_temp">{forecast.temp_c}°C</p>
-              </div>
-            </div>
-          ))}
-        </section>
-      ) : null}
+      <AnimatePresence initial={false}>
+        {!error.status && !loading ? (
+          <div className="flex rounded-md max-w-md overflow-x-hidden">
+            {forecast && (
+              <motion.div
+                initial={{ opacity: 0, y: -50, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+              >
+                <section className="bg-gray-200 items-center flex w-full max-w-md">
+                  <div className="flex flex-col w-[500px] text-black bg-gray-200 h-full">
+                    <h3 className="text-center text-3xl font-semibold text-dark-blue pb-10 pt-10">
+                      Weather for {forecast.location.name},{" "}
+                      {forecast.location.country}
+                    </h3>
+                    <div className="gap-4 flex flex-col w-full px-4 pb-4">
+                      {forecastDate!.map((forecast, index: number) => (
+                        <AnimateEntry index={index}>
+                          <Card forecast={forecast} />
+                        </AnimateEntry>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+              </motion.div>
+            )}
+          </div>
+        ) : null}
+      </AnimatePresence>
     </>
   );
 }
