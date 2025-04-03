@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { apiKey } from "../api/apiKey";
-import { current_api, forecast_api } from "../api/weatherApi";
+import { current_api, forecast_api } from "../api/api";
 import Cloud from "../images/clouds.png";
 import Sun from "../images/sun.png";
 import Rain from "../images/rain2.gif";
@@ -197,7 +197,8 @@ export default function WeatherNow() {
           className="search_form"
           onSubmit={(e) => {
             e.preventDefault();
-          }}>
+          }}
+        >
           {error && <span className="error">{error}</span>}
           <span className="search_header">Search for a location</span>
           <input

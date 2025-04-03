@@ -1,0 +1,3 @@
+type Weather = {
+  time: Number;
+};

@@ -1,20 +1,10 @@
-import {
-  useState,
-  useEffect,
-  FunctionComponent,
-  ReactNode,
-  ReactElement,
-} from "react";
-import { apiKey } from "../api/apiKey";
-import { forecast_api } from "../api/weatherApi";
+import { useState } from "react";
+import { forecast_api } from "../api/api";
 import Cloud from "../images/clouds.png";
 import Sun from "../images/sun.png";
 import Rain from "../images/rain2.gif";
 import Snow from "../images/snow.gif";
-
-interface weather {
-  time: number;
-}
+import { API_KEY } from "../api/apiKey";
 
 export default function ForecastWeather() {
   const [weatherData, setWeatherData] = useState<any>(null);
@@ -32,7 +22,7 @@ export default function ForecastWeather() {
       setLocationData(null);
 
       const req = await fetch(
-        forecast_api + apiKey + `&q=${searchParam}&aqi=no`
+        forecast_api + `?key=${API_KEY}` + `&q=${searchParam}&aqi=no`
       );
       const res = await req.json();
 
@@ -63,7 +53,7 @@ export default function ForecastWeather() {
     }
   };
 
-  const ForecastDate = forecastData.filter((time: weather) => {
+  const ForecastDate = forecastData.filter((time: Weather) => {
     if (time.time) {
       const forecastTime = time.time;
       const localTime = locationData.localtime;
@@ -97,7 +87,8 @@ export default function ForecastWeather() {
           className="search_form"
           onSubmit={(e) => {
             e.preventDefault();
-          }}>
+          }}
+        >
           {error && <span className="error">{error}</span>}
           <span className="search_header">Search for a location</span>
           <input
